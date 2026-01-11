@@ -33,7 +33,12 @@ const App: React.FC = () => {
   const [actions, setActions] = useState<CauseAction[]>(() => {
       try {
           const saved = localStorage.getItem('vibeteen_actions');
-          return saved ? JSON.parse(saved) : [];
+          const parsed = saved ? JSON.parse(saved) : [];
+          // Migration: Ensure prayedBy exists
+          return parsed.map((a: any) => ({
+              ...a,
+              prayedBy: Array.isArray(a.prayedBy) ? a.prayedBy : []
+          }));
       } catch (e) {
           console.error("Error loading actions", e);
           return [];
@@ -135,7 +140,8 @@ const App: React.FC = () => {
         userColor: user.avatarColor,
         friendName,
         action: type,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        prayedBy: []
     };
 
     setActions(prev => {
@@ -146,6 +152,26 @@ const App: React.FC = () => {
     setToastMessage("Ação Registrada com Sucesso! 🚀");
     setShowAddForm(false);
     setCurrentView('mural');
+  };
+
+  const handleToggleActionSupport = (actionId: string) => {
+      if (!user) return;
+      setActions(prev => prev.map(a => {
+          if (a.id === actionId) {
+                const hasPrayed = a.prayedBy.includes(user.uid);
+                const newPrayedBy = hasPrayed
+                    ? a.prayedBy.filter(uid => uid !== user.uid)
+                    : [...a.prayedBy, user.uid];
+                
+                if (!hasPrayed) {
+                    // Haptic feedback if available (mobile)
+                    if (navigator.vibrate) navigator.vibrate(50);
+                }
+                
+                return { ...a, prayedBy: newPrayedBy };
+          }
+          return a;
+      }));
   };
 
   const handleUpdateUser = (updatedUser: User) => {
@@ -221,6 +247,8 @@ const App: React.FC = () => {
                 onAddClick={onAddButtonClick}
                 mission={dailyMission}
                 isVisitor={user.role === 'visitor'}
+                currentUser={user}
+                onToggleSupport={handleToggleActionSupport}
             />
         )}
         {currentView === 'rank' && <Stats actions={actions} />}

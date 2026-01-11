@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useRef, useState } from 'react';
-import { ActionType, CauseAction, Coordinates } from '../types';
+import { ActionType, CauseAction, Coordinates, User } from '../types';
 import { ActionDetailModal } from './ActionDetailModal';
 
 interface MuralProps {
@@ -7,6 +7,8 @@ interface MuralProps {
   onAddClick: () => void;
   mission: string;
   isVisitor?: boolean;
+  currentUser: User;
+  onToggleSupport: (actionId: string) => void;
 }
 
 const getActionColor = (type: ActionType) => {
@@ -27,7 +29,7 @@ const getActionIcon = (type: ActionType) => {
     }
 };
 
-export const Mural: React.FC<MuralProps> = ({ actions, onAddClick, mission, isVisitor }) => {
+export const Mural: React.FC<MuralProps> = ({ actions, onAddClick, mission, isVisitor, currentUser, onToggleSupport }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [selectedAction, setSelectedAction] = useState<CauseAction | null>(null);
     
@@ -43,8 +45,6 @@ export const Mural: React.FC<MuralProps> = ({ actions, onAddClick, mission, isVi
         const coords: Coordinates[] = [];
         
         // Configuração para "Colar" os hexágonos (Tight Packing)
-        // O hexágono CSS tem w-24 (96px) e h-24 (96px).
-        // Para encaixar perfeitamente sem gaps, usamos passos menores que a largura total para criar sobreposição nas bordas cortadas.
         const hexWidth = 94; // Largura efetiva da coluna (96px - 2px overlap)
         const hexHeightStep = 70; // Passo vertical (96px * 0.75 ≈ 72px) - reduzido para 70 para colar bem.
 
@@ -62,14 +62,9 @@ export const Mural: React.FC<MuralProps> = ({ actions, onAddClick, mission, isVi
             r--; // Move para o anel exterior
             for (let i = 0; i < 6; i++) {
                 for (let j = 0; j < ring; j++) {
-                    // Conversão Axial -> Pixel customizada para hexágonos "Fat" (1:1 aspect ratio)
-                    // x = Width * (q + r/2)
-                    // y = HeightStep * r
                     const x = hexWidth * (q + r/2);
                     const y = hexHeightStep * r;
-                    
                     coords.push({x, y});
-                    
                     q += directions[i].q;
                     r += directions[i].r;
                 }
@@ -192,6 +187,10 @@ export const Mural: React.FC<MuralProps> = ({ actions, onAddClick, mission, isVi
                             const coord = spiralCoords[index];
                             if (!coord) return null;
 
+                            const isMine = action.userId === currentUser.uid;
+                            const isPrayed = action.prayedBy?.includes(currentUser.uid);
+                            const hasInteractions = action.prayedBy && action.prayedBy.length > 0;
+
                             return (
                                 <div 
                                     key={action.id}
@@ -204,19 +203,40 @@ export const Mural: React.FC<MuralProps> = ({ actions, onAddClick, mission, isVi
                                 >
                                     <div 
                                         onClick={(e) => {
-                                            setSelectedAction(action);
+                                            e.stopPropagation();
+                                            if (isMine) {
+                                                setSelectedAction(action);
+                                            } else {
+                                                onToggleSupport(action.id);
+                                            }
                                         }}
-                                        className={`w-24 h-24 ${getActionColor(action.action)} clip-hexagon flex flex-col items-center justify-center relative group hover:z-50 hover:scale-110 transition-transform cursor-pointer p-1 shadow-sm`}
+                                        className={`w-24 h-24 clip-hexagon flex flex-col items-center justify-center relative group hover:z-50 cursor-pointer p-1 transition-all duration-300
+                                            ${isPrayed 
+                                                ? 'bg-primary border-0 scale-105 shadow-[0_0_40px_rgba(249,245,6,0.6)] z-20' 
+                                                : `${getActionColor(action.action)} hover:scale-110 shadow-sm`
+                                            }
+                                        `}
                                     >
-                                        <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-black/10 pointer-events-none" />
+                                        <div className={`absolute inset-0 bg-gradient-to-br pointer-events-none ${isPrayed ? 'from-white/60 to-transparent' : 'from-white/20 to-black/10'}`} />
                                         
-                                        <span className="material-symbols-outlined text-white text-2xl z-10 drop-shadow-md mb-0.5">
-                                            {getActionIcon(action.action)}
+                                        {/* Icon */}
+                                        <span className={`material-symbols-outlined text-2xl z-10 drop-shadow-md mb-0.5 transition-transform duration-300 ${isPrayed ? 'text-black scale-125' : 'text-white'}`}>
+                                            {isPrayed ? 'volunteer_activism' : getActionIcon(action.action)}
                                         </span>
                                         
-                                        <span className="text-[9px] font-bold text-white leading-none text-center uppercase drop-shadow-md z-10 line-clamp-1 w-full px-1 break-all tracking-tight">
-                                            {action.userName.split(' ')[0]}
+                                        {/* Name or Status */}
+                                        <span className={`text-[9px] font-bold leading-none text-center uppercase drop-shadow-md z-10 line-clamp-1 w-full px-1 break-all tracking-tight ${isPrayed ? 'text-black' : 'text-white'}`}>
+                                            {isPrayed ? 'Você Orou' : action.userName.split(' ')[0]}
                                         </span>
+
+                                        {/* Support Counter Badge */}
+                                        {hasInteractions && !isPrayed && (
+                                            <div className="absolute bottom-4 z-20 flex gap-0.5">
+                                                {action.prayedBy.length > 0 && (
+                                                    <div className="w-2 h-2 rounded-full bg-white animate-pulse shadow-md"></div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             );

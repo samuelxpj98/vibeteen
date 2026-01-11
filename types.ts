@@ -29,6 +29,7 @@ export interface CauseAction {
     friendName: string;       // Quem recebeu a ação (ex: "João")
     action: ActionType;       // Tipo
     timestamp: string;        // Data ISO
+    prayedBy: string[];       // Quem "orou"/curtiu a ação
 }
 
 export interface Coordinates {
