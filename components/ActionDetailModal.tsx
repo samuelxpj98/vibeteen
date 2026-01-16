@@ -32,6 +32,8 @@ export const ActionDetailModal: React.FC<ActionDetailModalProps> = ({ action, on
     const theme = getActionTheme(action.action);
     const message = getInspirationalMessage(action.action);
 
+    const userImage = action.userPhotoUrl || `https://picsum.photos/200/200?random=${action.userId}`;
+
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             {/* Backdrop */}
@@ -68,7 +70,7 @@ export const ActionDetailModal: React.FC<ActionDetailModalProps> = ({ action, on
                     {/* From User */}
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-gray-200 border-2 border-white overflow-hidden shadow-sm">
-                             <img src={`https://picsum.photos/200/200?random=${action.userId}`} alt="User" className="w-full h-full object-cover" />
+                             <img src={userImage} alt="User" className="w-full h-full object-cover" />
                         </div>
                         <div className="flex flex-col">
                             <span className="text-[10px] text-gray-400 font-bold uppercase">Realizado por</span>

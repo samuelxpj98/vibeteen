@@ -8,75 +8,98 @@ import { Profile } from './components/Profile';
 import { MembersList } from './components/MembersList';
 import { WelcomeScreen } from './components/WelcomeScreen';
 
+// Firebase Imports
+import { db } from './services/firebaseConfig';
+import { 
+    collection, 
+    addDoc, 
+    onSnapshot, 
+    query, 
+    orderBy, 
+    doc, 
+    updateDoc, 
+    setDoc,
+    where,
+    getDocs
+} from 'firebase/firestore';
+
 const App: React.FC = () => {
-  // --- STATE INITIALIZATION (PERSISTENCE) ---
-  
+  // --- STATE ---
+  // Nota: Não inicializamos mais com localStorage, pois os dados virão do Firebase
   const [user, setUser] = useState<User | null>(() => {
+      // Mantemos apenas a sessão do usuário localmente para ele não precisar logar toda vez que der F5
       try {
-          const savedUser = localStorage.getItem('vibeteen_user');
+          const savedUser = localStorage.getItem('vibeteen_user_session');
           return savedUser ? JSON.parse(savedUser) : null;
       } catch (e) {
-          console.error("Error loading user", e);
           return null;
       }
   });
 
-  const [members, setMembers] = useState<User[]>(() => {
-      try {
-          const savedMembers = localStorage.getItem('vibeteen_members');
-          return savedMembers ? JSON.parse(savedMembers) : [];
-      } catch (e) {
-          return [];
-      }
-  });
-
-  const [actions, setActions] = useState<CauseAction[]>(() => {
-      try {
-          const saved = localStorage.getItem('vibeteen_actions');
-          const parsed = saved ? JSON.parse(saved) : [];
-          // Migration: Ensure prayedBy exists
-          return parsed.map((a: any) => ({
-              ...a,
-              prayedBy: Array.isArray(a.prayedBy) ? a.prayedBy : []
-          }));
-      } catch (e) {
-          console.error("Error loading actions", e);
-          return [];
-      }
-  });
-
-  const [prayerRequests, setPrayerRequests] = useState<PrayerRequest[]>(() => {
-      try {
-          const saved = localStorage.getItem('vibeteen_prayers');
-          return saved ? JSON.parse(saved) : [];
-      } catch (e) {
-          return [];
-      }
-  });
+  const [members, setMembers] = useState<User[]>([]);
+  const [actions, setActions] = useState<CauseAction[]>([]);
+  const [prayerRequests, setPrayerRequests] = useState<PrayerRequest[]>([]);
 
   const [currentView, setCurrentView] = useState<'mural' | 'rank' | 'members' | 'profile'>('mural');
   const [showAddForm, setShowAddForm] = useState(false);
   const [dailyMission, setDailyMission] = useState<string>('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // --- PERSISTENCE EFFECTS ---
+  // --- FIREBASE REAL-TIME LISTENERS ---
 
+  // 1. Ouvir Ações (Actions) em tempo real
   useEffect(() => {
-      if (user) localStorage.setItem('vibeteen_user', JSON.stringify(user));
-      else localStorage.removeItem('vibeteen_user');
+    const q = query(collection(db, "actions"), orderBy("timestamp", "desc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const loadedActions = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        })) as CauseAction[];
+        setActions(loadedActions);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // 2. Ouvir Pedidos de Oração (PrayerRequests) em tempo real
+  useEffect(() => {
+    const q = query(collection(db, "prayers"), orderBy("timestamp", "desc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const loadedPrayers = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        })) as PrayerRequest[];
+        setPrayerRequests(loadedPrayers);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // 3. Ouvir Membros (Users) em tempo real
+  useEffect(() => {
+    const q = query(collection(db, "users"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const loadedMembers = snapshot.docs.map(doc => ({
+            ...doc.data()
+        })) as User[];
+        setMembers(loadedMembers);
+        
+        // Se o usuário atual estiver logado, atualiza os dados dele também para garantir sincronia
+        if (user) {
+            const me = loadedMembers.find(m => m.uid === user.uid);
+            if (me) {
+                 setUser(me);
+                 localStorage.setItem('vibeteen_user_session', JSON.stringify(me));
+            }
+        }
+    });
+    return () => unsubscribe();
+  }, [user?.uid]); // Dependência apenas no UID para evitar loops, mas atualiza se o user mudar
+
+
+  // --- SESSION PERSISTENCE ---
+  useEffect(() => {
+      if (user) localStorage.setItem('vibeteen_user_session', JSON.stringify(user));
+      else localStorage.removeItem('vibeteen_user_session');
   }, [user]);
-
-  useEffect(() => {
-      localStorage.setItem('vibeteen_members', JSON.stringify(members));
-  }, [members]);
-
-  useEffect(() => {
-      localStorage.setItem('vibeteen_actions', JSON.stringify(actions));
-  }, [actions]);
-
-  useEffect(() => {
-      localStorage.setItem('vibeteen_prayers', JSON.stringify(prayerRequests));
-  }, [prayerRequests]);
 
   // Toast Timer
   useEffect(() => {
@@ -87,7 +110,6 @@ const App: React.FC = () => {
   }, [toastMessage]);
 
   // --- API ---
-
   useEffect(() => {
     const fetchMission = async () => {
         const mission = await getDailyMission();
@@ -98,21 +120,30 @@ const App: React.FC = () => {
 
   // --- HANDLERS ---
 
-  const handleLogin = (incomingUser: User) => {
-      // Try to recover existing profile by email to keep stats/photo consistent
-      const existingMember = members.find(m => m.email.toLowerCase() === incomingUser.email.toLowerCase());
-      
-      let finalUser = incomingUser;
+  const handleLogin = async (incomingUser: User) => {
+      try {
+        // Verificar se usuário já existe no Firebase pelo email (loginId)
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("email", "==", incomingUser.email));
+        const querySnapshot = await getDocs(q);
 
-      if (existingMember) {
-          finalUser = { ...existingMember };
-      }
+        let finalUser = incomingUser;
 
-      setUser(finalUser);
+        if (!querySnapshot.empty) {
+            // Usuário existe: Logar com dados do banco
+            finalUser = querySnapshot.docs[0].data() as User;
+            setToastMessage(`Bem-vindo de volta, ${finalUser.firstName}!`);
+        } else {
+            // Usuário novo: Criar no banco
+            // Usamos o UID como ID do documento para facilitar updates futuros
+            await setDoc(doc(db, "users", incomingUser.uid), incomingUser);
+            setToastMessage("Conta criada com sucesso!");
+        }
 
-      // Add to members list if it's a new valid member
-      if (!existingMember && finalUser.role === 'member') {
-          setMembers(prev => [finalUser, ...prev]);
+        setUser(finalUser);
+      } catch (error) {
+          console.error("Erro no login:", error);
+          alert("Erro ao conectar ao servidor. Verifique sua internet.");
       }
   };
 
@@ -130,95 +161,132 @@ const App: React.FC = () => {
       setShowAddForm(true);
   };
 
-  const handleAddAction = (type: ActionType, friendName: string) => {
+  const handleAddAction = async (type: ActionType, friendName: string) => {
     if (!user || user.role === 'visitor') return;
 
-    const newAction: CauseAction = {
-        id: Date.now().toString(),
+    // Remove ID manual, o Firebase cria automático, mas precisamos passar o objeto sem ID e depois pegar o ID gerado se necessário
+    // Ou geramos um ID antes. Vamos deixar o Firebase gerar o ID do documento, mas salvaremos um ID dentro do objeto por compatibilidade
+    
+    const newActionBase = {
         userId: user.uid,
         userName: user.firstName, 
         userColor: user.avatarColor,
+        userPhotoUrl: user.photoUrl || '',
         friendName,
         action: type,
         timestamp: new Date().toISOString(),
         prayedBy: []
     };
 
-    setActions(prev => {
-        const updated = [newAction, ...prev];
-        return updated;
-    });
-    
-    setToastMessage("Ação Registrada com Sucesso! 🚀");
-    setShowAddForm(false);
-    setCurrentView('mural');
+    try {
+        await addDoc(collection(db, "actions"), newActionBase);
+        setToastMessage("Ação Registrada e Sincronizada! 🚀");
+        setShowAddForm(false);
+        setCurrentView('mural');
+    } catch (e) {
+        console.error("Erro ao salvar ação", e);
+        setToastMessage("Erro ao salvar. Tente novamente.");
+    }
   };
 
-  const handleToggleActionSupport = (actionId: string) => {
+  const handleToggleActionSupport = async (actionId: string) => {
       if (!user) return;
-      setActions(prev => prev.map(a => {
-          if (a.id === actionId) {
-                const hasPrayed = a.prayedBy.includes(user.uid);
-                const newPrayedBy = hasPrayed
-                    ? a.prayedBy.filter(uid => uid !== user.uid)
-                    : [...a.prayedBy, user.uid];
-                
-                if (!hasPrayed) {
-                    // Haptic feedback if available (mobile)
-                    if (navigator.vibrate) navigator.vibrate(50);
-                }
-                
-                return { ...a, prayedBy: newPrayedBy };
-          }
-          return a;
-      }));
-  };
+      
+      const actionToUpdate = actions.find(a => a.id === actionId);
+      if (!actionToUpdate) return;
 
-  const handleUpdateUser = (updatedUser: User) => {
-      setUser(updatedUser);
-      // Sync update with members list
-      setMembers(prev => prev.map(m => m.uid === updatedUser.uid ? updatedUser : m));
-      setToastMessage("Perfil Atualizado! ✅");
-  };
+      const hasPrayed = actionToUpdate.prayedBy.includes(user.uid);
+      const newPrayedBy = hasPrayed
+          ? actionToUpdate.prayedBy.filter(uid => uid !== user.uid)
+          : [...actionToUpdate.prayedBy, user.uid];
 
-  const handleClearData = () => {
-      if (window.confirm("Tem certeza? Isso apagará todas as ações locais.")) {
-          setActions([]);
-          setPrayerRequests([]);
-          localStorage.removeItem('vibeteen_actions');
-          localStorage.removeItem('vibeteen_prayers');
-          setToastMessage("Dados Limpos 🗑️");
+      if (!hasPrayed && navigator.vibrate) navigator.vibrate(50);
+
+      try {
+          const actionRef = doc(db, "actions", actionId);
+          await updateDoc(actionRef, { prayedBy: newPrayedBy });
+      } catch (e) {
+          console.error("Erro ao curtir ação", e);
       }
   };
 
-  const handleAddPrayerRequest = (category: PrayerCategory, description: string) => {
+  const handleUpdateUser = async (updatedUser: User) => {
+      try {
+          // 1. Atualizar documento do usuário
+          const userRef = doc(db, "users", updatedUser.uid);
+          await updateDoc(userRef, {
+              firstName: updatedUser.firstName,
+              lastName: updatedUser.lastName,
+              avatarColor: updatedUser.avatarColor,
+              photoUrl: updatedUser.photoUrl || ''
+          });
+
+          // Opcional: Atualizar dados históricos. 
+          // No NoSQL (Firebase), é comum desnormalizar dados.
+          // Para um app pequeno, podemos fazer queries e atualizar tudo (Batch Update).
+          // Para simplificar aqui, vamos confiar que o app exibe a foto nova baseada no ID do usuário se fizermos join no front,
+          // MAS como o app atual salva nome/foto na Ação, seria ideal atualizar.
+          // ATENÇÃO: Em produção com muitos dados, isso deve ser feito via Cloud Function. Aqui faremos no front com cuidado.
+          
+          // NÃO vamos atualizar todas as ações históricas agora para evitar muitas leituras/escritas no plano free do Firebase
+          // O usuário verá os dados novos no perfil, mas ações antigas podem manter o nome antigo por enquanto (snapshot histórico).
+          
+          setUser(updatedUser);
+          setToastMessage("Perfil Salvo na Nuvem! ✅");
+
+      } catch (e) {
+          console.error("Erro ao atualizar perfil", e);
+          setToastMessage("Erro ao salvar perfil.");
+      }
+  };
+
+  const handleClearData = () => {
+      // Como agora é na nuvem, "limpar dados" é perigoso. Vamos apenas limpar o cache local/logout.
+      if (window.confirm("Isso desconectará sua conta deste dispositivo.")) {
+          handleLogout();
+      }
+  };
+
+  const handleAddPrayerRequest = async (category: PrayerCategory, description: string) => {
       if (!user) return;
-      const newRequest: PrayerRequest = {
-          id: Date.now().toString(),
+      
+      const newRequestBase = {
           userId: user.uid,
           userName: user.firstName,
           userAvatarColor: user.avatarColor,
+          userPhotoUrl: user.photoUrl || '',
           category,
           description,
           prayedBy: [],
           timestamp: new Date().toISOString()
       };
-      setPrayerRequests(prev => [newRequest, ...prev]);
-      setToastMessage("Pedido de Oração Enviado 🙏");
+
+      try {
+          await addDoc(collection(db, "prayers"), newRequestBase);
+          setToastMessage("Pedido de Oração Enviado para a Rede 🙏");
+      } catch (e) {
+          console.error("Erro ao enviar oração", e);
+          setToastMessage("Erro ao enviar.");
+      }
   };
 
-  const handleTogglePray = (requestId: string) => {
+  const handleTogglePray = async (requestId: string) => {
       if (!user) return;
-      setPrayerRequests(prev => prev.map(req => {
-          if (req.id === requestId) {
-              const hasPrayed = req.prayedBy.includes(user.uid);
-              const newPrayedBy = hasPrayed 
-                  ? req.prayedBy.filter(uid => uid !== user.uid)
-                  : [...req.prayedBy, user.uid];
-              return { ...req, prayedBy: newPrayedBy };
-          }
-          return req;
-      }));
+
+      const reqToUpdate = prayerRequests.find(r => r.id === requestId);
+      if (!reqToUpdate) return;
+
+      const hasPrayed = reqToUpdate.prayedBy.includes(user.uid);
+      const newPrayedBy = hasPrayed 
+          ? reqToUpdate.prayedBy.filter(uid => uid !== user.uid)
+          : [...reqToUpdate.prayedBy, user.uid];
+
+      try {
+          const reqRef = doc(db, "prayers", requestId);
+          await updateDoc(reqRef, { prayedBy: newPrayedBy });
+      } catch (e) {
+          console.error("Erro ao orar", e);
+      }
   };
 
   // If not logged in, show Welcome Screen
@@ -231,7 +299,7 @@ const App: React.FC = () => {
       
       {/* Toast Notification */}
       {toastMessage && (
-          <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[70] animate-in slide-in-from-top-4 duration-300 fade-in">
+          <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[70] animate-in slide-in-from-top-4 duration-300 fade-in pointer-events-none">
               <div className="bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-2 border border-gray-700">
                   <span className="material-symbols-outlined text-primary">check_circle</span>
                   <span className="text-xs font-bold uppercase tracking-wider">{toastMessage}</span>

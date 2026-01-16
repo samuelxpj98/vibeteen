@@ -52,6 +52,56 @@ export const Profile: React.FC<ProfileProps> = ({ user, actions, onUpdateUser, o
         setIsEditing(false);
     };
 
+    // --- BACKUP LOGIC ---
+    const handleExportData = () => {
+        const data = {
+            user: localStorage.getItem('vibeteen_user'),
+            members: localStorage.getItem('vibeteen_members'),
+            actions: localStorage.getItem('vibeteen_actions'),
+            prayers: localStorage.getItem('vibeteen_prayers'),
+            timestamp: new Date().toISOString()
+        };
+        
+        const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `vibeteen_backup_${user.firstName}_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    const handleImportData = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        if(!window.confirm("Isso substituirá os dados atuais deste dispositivo pelos dados do arquivo. Deseja continuar?")) {
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const content = e.target?.result as string;
+                const data = JSON.parse(content);
+                
+                if (data.user) localStorage.setItem('vibeteen_user', data.user);
+                if (data.members) localStorage.setItem('vibeteen_members', data.members);
+                if (data.actions) localStorage.setItem('vibeteen_actions', data.actions);
+                if (data.prayers) localStorage.setItem('vibeteen_prayers', data.prayers);
+                
+                alert("Dados importados com sucesso! O app será recarregado.");
+                window.location.reload();
+            } catch (error) {
+                alert("Erro ao ler o arquivo de backup.");
+                console.error(error);
+            }
+        };
+        reader.readAsText(file);
+    };
+
     const currentImageSrc = editPhotoUrl && editPhotoUrl.trim() !== '' 
         ? editPhotoUrl 
         : `https://picsum.photos/200/200?random=${photoSeed}`;
@@ -203,6 +253,29 @@ export const Profile: React.FC<ProfileProps> = ({ user, actions, onUpdateUser, o
                     </div>
 
                     <div className="border-t border-gray-100 pt-8 space-y-3">
+                        
+                        {/* Backup Buttons */}
+                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200 mb-4">
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 text-center">Sincronização entre Dispositivos</p>
+                            <div className="flex gap-2">
+                                <button 
+                                    onClick={handleExportData}
+                                    className="flex-1 flex flex-col items-center justify-center gap-1 p-3 rounded-xl bg-white border border-gray-200 hover:border-blue-300 hover:text-blue-600 transition-all text-gray-600"
+                                >
+                                    <span className="material-symbols-outlined text-2xl">download</span>
+                                    <span className="text-[10px] font-bold uppercase">Exportar Dados</span>
+                                </button>
+                                <label className="flex-1 flex flex-col items-center justify-center gap-1 p-3 rounded-xl bg-white border border-gray-200 hover:border-green-300 hover:text-green-600 transition-all text-gray-600 cursor-pointer">
+                                    <span className="material-symbols-outlined text-2xl">upload_file</span>
+                                    <span className="text-[10px] font-bold uppercase">Importar Dados</span>
+                                    <input type="file" onChange={handleImportData} className="hidden" accept=".json" />
+                                </label>
+                            </div>
+                            <p className="text-[9px] text-gray-400 text-center mt-2 leading-tight">
+                                Use Exportar no celular e envie o arquivo para o PC. Depois use Importar no PC para carregar o mural.
+                            </p>
+                        </div>
+
                         <button 
                             onClick={onLogout}
                             className="w-full flex items-center justify-center gap-2 p-4 rounded-2xl bg-gray-50 text-gray-600 font-bold text-xs uppercase tracking-widest border border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-all"

@@ -105,7 +105,8 @@ export const MembersList: React.FC<MembersListProps> = ({
                                 const hasPrayed = req.prayedBy.includes(currentUser.uid);
                                 const isMine = req.userId === currentUser.uid;
                                 const prayedNames = getPrayedByNames(req.prayedBy);
-                                
+                                const userImage = req.userPhotoUrl || `https://picsum.photos/200/200?random=${req.userId}`;
+
                                 return (
                                     <div 
                                         key={req.id} 
@@ -123,8 +124,8 @@ export const MembersList: React.FC<MembersListProps> = ({
                                         {/* Header */}
                                         <div className="flex justify-between items-start mb-4 relative z-10">
                                             <div className="flex items-center gap-3">
-                                                <div className={`w-12 h-12 rounded-2xl ${req.userAvatarColor} border-2 border-black flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]`}>
-                                                     <span className="text-xl">😎</span>
+                                                <div className={`w-12 h-12 rounded-2xl ${req.userAvatarColor || 'bg-gray-200'} border-2 border-black overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]`}>
+                                                     <img src={userImage} alt={req.userName} className="w-full h-full object-cover" />
                                                 </div>
                                                 <div className="flex flex-col">
                                                     <span className={`text-3xl font-black italic leading-none tracking-tighter ${hasPrayed ? 'text-black' : 'text-gray-900'}`}>

@@ -26,6 +26,7 @@ export interface CauseAction {
     userId: string;
     userName: string;
     userColor: string;
+    userPhotoUrl?: string;    // Foto do usuário no momento (ou atualizada)
     friendName: string;       // Quem recebeu a ação (ex: "João")
     action: ActionType;       // Tipo
     timestamp: string;        // Data ISO
@@ -45,6 +46,7 @@ export interface PrayerRequest {
     userId: string;
     userName: string;
     userAvatarColor: string;
+    userPhotoUrl?: string; // Foto do usuário
     category: PrayerCategory;
     description: string;
     prayedBy: string[]; // Lista de UIDs de quem orou
