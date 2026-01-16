@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { User } from '../types';
 
@@ -285,7 +286,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onLogin }) => {
       </div>
       
       <p className="absolute bottom-6 text-[10px] font-bold text-gray-400 uppercase tracking-widest opacity-60">
-        Cyber Gospel v2.2 (Cloud Connected)
+        Criado por Samuel Duarte
       </p>
     </div>
   );

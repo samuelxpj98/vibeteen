@@ -161,6 +161,11 @@ export const Profile: React.FC<ProfileProps> = ({ user, actions, onUpdateUser, o
                     <button onClick={onLogout} className="w-full p-5 rounded-3xl bg-gray-50 text-gray-400 font-black text-[10px] uppercase tracking-[0.3em] hover:text-red-500 transition-colors">
                         Sair da Conta
                     </button>
+                    <div className="mt-8 text-center pb-4">
+                        <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">
+                            Criado por Samuel Duarte
+                        </p>
+                    </div>
                 </div>
             </div>
 
