@@ -55,9 +55,6 @@ export const Profile: React.FC<ProfileProps> = ({ user, actions, onUpdateUser, o
                     <div className={`w-32 h-32 rounded-[3rem] border-[8px] border-white shadow-2xl relative z-10 rotate-2 group-hover:rotate-0 transition-transform duration-500 flex items-center justify-center ${isEditing ? editColor : user.avatarColor}`}>
                         <span className="material-symbols-outlined text-white text-5xl font-black opacity-40">person</span>
                     </div>
-                    <div className="absolute -bottom-2 -right-2 z-20 bg-black text-primary px-3 py-1 rounded-xl border-4 border-white text-[12px] font-black italic shadow-lg">
-                        LVL {user.level || 1}
-                    </div>
                 </div>
                 
                 <div className="text-center mt-6 w-full max-w-[280px]">

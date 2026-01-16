@@ -22,7 +22,6 @@ export interface User {
     createdAt: string;
     // Gamificação
     xp: number;
-    level: number;
     streak: number;
     lastActionDate?: string;
 }

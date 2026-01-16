@@ -15,13 +15,13 @@ export const getDailyMission = async (): Promise<string> => {
   }
 };
 
-export const getVibeWord = async (userName: string, level: number): Promise<string> => {
+export const getVibeWord = async (userName: string): Promise<string> => {
   try {
     if (!process.env.API_KEY) return "Você é luz!";
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Gere uma frase de encorajamento cristã curta e 'cool' (estilo teen) para o jovem ${userName} que está no nível ${level}. Use gírias saudáveis e foco em propósito. Máximo 15 palavras.`,
+      contents: `Gere uma frase de encorajamento cristã curta e 'cool' (estilo teen) para o jovem ${userName}. Use gírias saudáveis e foco em propósito. Máximo 15 palavras.`,
     });
     return response.text || "Continue brilhando!";
   } catch (error) {

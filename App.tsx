@@ -76,8 +76,7 @@ const App: React.FC = () => {
     const xpTable = { [ActionType.OREI]: 10, [ActionType.CUIDEI]: 15, [ActionType.COMPARTILHEI]: 25, [ActionType.CONVIDEI]: 50 };
     const xpGain = xpTable[type];
     const newXp = (user.xp || 0) + xpGain;
-    const newLevel = Math.floor(newXp / 100) + 1;
-
+    
     const today = new Date().toISOString().split('T')[0];
     const lastDate = user.lastActionDate;
     let newStreak = user.streak || 0;
@@ -94,7 +93,7 @@ const App: React.FC = () => {
         });
 
         await updateDoc(doc(db, "users", user.uid), { 
-            xp: newXp, level: newLevel, streak: newStreak, lastActionDate: today 
+            xp: newXp, streak: newStreak, lastActionDate: today 
         });
 
         showToast(`Impacto +${xpGain} XP!`, 'rocket_launch');

@@ -58,7 +58,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onLogin }) => {
     const cleanId = loginId.toLowerCase().replace(/[^a-z0-9]/g, '');
     const uid = `user_${cleanId}`;
 
-    // Add required properties: xp, level, streak
+    // Add required properties: xp, streak
     const userPayload: User = {
       uid: uid,
       firstName: mode === 'login' ? 'Visitante' : firstName, // Se login, o App.tsx vai sobrescrever com o dado real do banco
@@ -69,7 +69,6 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onLogin }) => {
       role: 'member',
       createdAt: new Date().toISOString(),
       xp: 0,
-      level: 1,
       streak: 0
     };
 
@@ -78,7 +77,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onLogin }) => {
   };
 
   const handleVisitorAccess = async () => {
-      // Add required properties: xp, level, streak
+      // Add required properties: xp, streak
       const guestUser: User = {
           uid: 'guest-user',
           firstName: 'Visitante',
@@ -88,7 +87,6 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onLogin }) => {
           role: 'visitor',
           createdAt: new Date().toISOString(),
           xp: 0,
-          level: 1,
           streak: 0
       };
       await onLogin(guestUser);

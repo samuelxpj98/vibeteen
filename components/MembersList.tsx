@@ -172,8 +172,7 @@ export const MembersList: React.FC<MembersListProps> = ({
                                     <div>
                                         <p className="text-sm font-black text-gray-900 uppercase italic tracking-tighter">{member.firstName} {member.lastName}</p>
                                         <div className="flex items-center gap-1 mt-0.5">
-                                            <span className="text-[8px] font-black text-primary bg-black px-1.5 py-0.5 rounded">LVL {member.level}</span>
-                                            <span className="text-[8px] font-bold text-gray-400 uppercase ml-1">Vibe Teen</span>
+                                            <span className="text-[8px] font-bold text-gray-400 uppercase">Vibe Teen</span>
                                         </div>
                                     </div>
                                 </div>
