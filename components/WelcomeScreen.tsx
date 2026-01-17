@@ -8,6 +8,12 @@ interface WelcomeScreenProps {
 
 type AuthMode = 'login' | 'register';
 
+const COLOR_GRID = [
+    'bg-primary', 'bg-action-blue', 'bg-action-green', 'bg-action-orange',
+    'bg-purple-600', 'bg-pink-500', 'bg-red-500', 'bg-orange-500',
+    'bg-sky-500', 'bg-indigo-500', 'bg-violet-500', 'bg-rose-500'
+];
+
 export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onLogin }) => {
   const [mode, setMode] = useState<AuthMode>('login');
   const [step, setStep] = useState<1 | 2>(1); // Step 1: Info/User, Step 2: PIN
@@ -18,13 +24,14 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onLogin }) => {
   const [lastName, setLastName] = useState('');
   const [loginId, setLoginId] = useState(''); // Replaces Email
   const [pin, setPin] = useState('');
-  const [church, setChurch] = useState<'Vibe Teen' | 'Outra Igreja'>('Vibe Teen');
+  const [birthDate, setBirthDate] = useState('');
+  const [selectedColor, setSelectedColor] = useState('bg-primary');
 
   const handleNextStep = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (mode === 'login' && loginId.trim()) {
         setStep(2);
-    } else if (mode === 'register' && firstName && lastName && loginId) {
+    } else if (mode === 'register' && firstName && lastName && loginId && birthDate) {
         setStep(2);
     }
   };
@@ -49,23 +56,18 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onLogin }) => {
 
   const submitAuth = async (finalPin: string) => {
     setIsLoading(true);
-    // Nota: Em um app real, o PIN deveria ser validado no backend de forma segura.
-    // Aqui estamos focando na estrutura do banco de dados, então ainda vamos aceitar qualquer PIN
-    // mas vamos criar/buscar o usuário no banco de dados.
     
-    // Gerar um ID consistente baseado no loginId se for novo registro para facilitar buscas
     // Em produção, deixe o Auth provider gerar o UID.
     const cleanId = loginId.toLowerCase().replace(/[^a-z0-9]/g, '');
     const uid = `user_${cleanId}`;
 
-    // Add required properties: xp, streak
     const userPayload: User = {
       uid: uid,
-      firstName: mode === 'login' ? 'Visitante' : firstName, // Se login, o App.tsx vai sobrescrever com o dado real do banco
+      firstName: mode === 'login' ? 'Visitante' : firstName, 
       lastName: mode === 'login' ? '' : lastName,
       email: loginId,
-      church: mode === 'login' ? 'Vibe Teen' : church,
-      avatarColor: 'bg-primary',
+      birthDate: mode === 'login' ? '' : birthDate,
+      avatarColor: mode === 'login' ? 'bg-primary' : selectedColor,
       role: 'member',
       createdAt: new Date().toISOString(),
       xp: 0,
@@ -77,7 +79,6 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onLogin }) => {
   };
 
   const handleVisitorAccess = async () => {
-      // Add required properties: xp, streak
       const guestUser: User = {
           uid: 'guest-user',
           firstName: 'Visitante',
@@ -175,22 +176,27 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onLogin }) => {
                                 </div>
                                 
                                 <div>
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase ml-2 mb-1 block">Sua Igreja</label>
-                                    <div className="flex gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => setChurch('Vibe Teen')}
-                                            className={`flex-1 h-10 rounded-xl border text-xs font-bold uppercase transition-all ${church === 'Vibe Teen' ? 'bg-black text-primary border-black' : 'bg-white border-gray-200 text-gray-500'}`}
-                                        >
-                                            Vibe Teen
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setChurch('Outra Igreja')}
-                                            className={`flex-1 h-10 rounded-xl border text-xs font-bold uppercase transition-all ${church === 'Outra Igreja' ? 'bg-black text-white border-black' : 'bg-white border-gray-200 text-gray-500'}`}
-                                        >
-                                            Outra
-                                        </button>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase ml-2 mb-1 block">Data de Aniversário</label>
+                                    <input 
+                                        required
+                                        type="date" 
+                                        value={birthDate}
+                                        onChange={(e) => setBirthDate(e.target.value)}
+                                        className="w-full bg-white border border-gray-200 focus:border-primary/50 rounded-xl h-12 px-4 text-sm font-bold text-gray-700 outline-none transition-all"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase ml-2 mb-2 block">Escolha sua Cor</label>
+                                    <div className="grid grid-cols-6 gap-2 bg-gray-50 p-2 rounded-xl border border-gray-100">
+                                        {COLOR_GRID.map((color) => (
+                                            <button
+                                                key={color}
+                                                type="button"
+                                                onClick={() => setSelectedColor(color)}
+                                                className={`w-full aspect-square rounded-lg ${color} ${selectedColor === color ? 'ring-2 ring-black scale-110 shadow-md' : 'opacity-70 hover:opacity-100'} transition-all`}
+                                            />
+                                        ))}
                                     </div>
                                 </div>
                             </div>
@@ -198,7 +204,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onLogin }) => {
 
                         <div className="space-y-1">
                             <label className="text-[10px] font-bold text-gray-400 uppercase ml-2 block">
-                                {mode === 'login' ? 'Login de acesso' : 'Crie seu usuário'}
+                                {mode === 'login' ? 'Login de acesso' : 'Crie seu usuário (Login)'}
                             </label>
                             <input 
                                 required

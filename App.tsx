@@ -85,9 +85,14 @@ const App: React.FC = () => {
         newStreak = (lastDate === yesterday) ? newStreak + 1 : 1;
     }
 
+    // Salvar nome completo para exibição correta no mural (ex: Samuel D.)
+    const fullName = `${user.firstName} ${user.lastName}`.trim();
+
     try {
         await addDoc(collection(db, "actions"), {
-            userId: user.uid, userName: user.firstName, userColor: user.avatarColor,
+            userId: user.uid, 
+            userName: fullName, // Salva nome completo
+            userColor: user.avatarColor,
             friendName, action: type,
             timestamp: new Date().toISOString(), prayedBy: []
         });
@@ -125,13 +130,14 @@ const App: React.FC = () => {
       const userSnap = await getDocs(query(collection(db, "users"), where("uid", "==", userData.uid)));
       
       if (userSnap.empty) {
-          const colors = [
-              'bg-primary', 'bg-action-blue', 'bg-action-green', 'bg-action-orange',
-              'bg-purple-600', 'bg-pink-500', 'bg-red-500', 'bg-orange-500',
-              'bg-amber-500', 'bg-lime-500', 'bg-emerald-500', 'bg-teal-500',
-              'bg-sky-500', 'bg-indigo-500', 'bg-violet-500', 'bg-rose-500'
-          ];
-          userData.avatarColor = colors[Math.floor(Math.random() * colors.length)];
+          // Se não tiver cor definida (ex: visitante ou registro manual sem cor), atribui uma aleatória
+          if (!userData.avatarColor) {
+              const colors = [
+                  'bg-primary', 'bg-action-blue', 'bg-action-green', 'bg-action-orange',
+                  'bg-purple-600', 'bg-pink-500', 'bg-red-500', 'bg-orange-500',
+              ];
+              userData.avatarColor = colors[Math.floor(Math.random() * colors.length)];
+          }
           await setDoc(userRef, userData);
       } else {
           userData = userSnap.docs[0].data() as User;
@@ -172,7 +178,7 @@ const App: React.FC = () => {
             <NavBtn icon="grid_view" label="Mural" active={currentView === 'mural'} onClick={() => setCurrentView('mural')} />
             <NavBtn icon="leaderboard" label="Vibe" active={currentView === 'rank'} onClick={() => setCurrentView('rank')} />
             <NavBtn icon="volunteer_activism" label="Oração" active={currentView === 'members'} onClick={() => setCurrentView('members')} />
-            <button onClick={() => setCurrentView('profile')} className={`flex flex-col items-center gap-1 transition-all ${currentView === 'profile' ? 'scale-125' : 'opacity-40 grayscale'}`}>
+            <button onClick={() => setCurrentView('profile')} className={`flex flex-col items-center gap-1 transition-all ${currentView === 'profile' ? 'scale-125' : 'opacity-100 grayscale'}`}>
                 <div className={`w-8 h-8 rounded-2xl flex items-center justify-center border-2 transition-all ${currentView === 'profile' ? 'border-primary' : 'border-gray-200'} ${user.avatarColor}`}>
                     <span className="material-symbols-outlined text-white text-xs opacity-50">person</span>
                 </div>
@@ -184,7 +190,7 @@ const App: React.FC = () => {
 };
 
 const NavBtn = ({ icon, label, active, onClick }: any) => (
-    <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-all ${active ? 'text-black scale-110' : 'text-gray-400 opacity-40 hover:opacity-100'}`}>
+    <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-all ${active ? 'text-black scale-110' : 'text-black/60 hover:text-black'}`}>
         <span className={`material-symbols-outlined text-[26px] ${active ? 'font-black filled' : ''}`}>{icon}</span>
         <span className="text-[8px] font-black uppercase tracking-widest">{label}</span>
     </button>

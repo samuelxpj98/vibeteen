@@ -162,22 +162,19 @@ export const MembersList: React.FC<MembersListProps> = ({
                 )}
 
                 {activeTab === 'members' && (
-                    <div className="space-y-4 animate-in slide-in-from-right duration-300">
+                    <div className="grid grid-cols-3 gap-3 animate-in slide-in-from-right duration-300">
                         {members.map(member => (
-                            <div key={member.uid} className="bg-white p-4 rounded-3xl border border-gray-100 flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                    <div className={`w-12 h-12 rounded-2xl border-2 border-primary flex items-center justify-center shadow-sm ${member.avatarColor}`}>
-                                        <span className="material-symbols-outlined text-white text-xl opacity-40">person</span>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-black text-gray-900 uppercase italic tracking-tighter">{member.firstName} {member.lastName}</p>
-                                        <div className="flex items-center gap-1 mt-0.5">
-                                            <span className="text-[8px] font-bold text-gray-400 uppercase">Vibe Teen</span>
-                                        </div>
-                                    </div>
+                            <div key={member.uid} className="bg-white p-3 rounded-3xl border border-gray-100 flex flex-col items-center justify-center shadow-sm hover:shadow-md transition-shadow">
+                                <div className={`w-16 h-16 rounded-2xl border-2 border-primary flex items-center justify-center shadow-sm mb-3 ${member.avatarColor}`}>
+                                    <span className="material-symbols-outlined text-white text-3xl opacity-40">person</span>
                                 </div>
-                                <div className="flex flex-col items-end">
-                                    <span className="text-[10px] font-black text-orange-500 italic">{member.streak}D FIRE</span>
+                                <div className="text-center w-full">
+                                    <p className="text-xs font-black text-gray-900 uppercase italic tracking-tighter leading-tight mb-0.5 truncate px-1">
+                                        {member.firstName}
+                                    </p>
+                                    <p className="text-[8px] font-bold text-gray-400 uppercase truncate max-w-full px-1">
+                                        {member.lastName}
+                                    </p>
                                 </div>
                             </div>
                         ))}

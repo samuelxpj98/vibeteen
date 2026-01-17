@@ -3,7 +3,7 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>VIBE TEEN</title>
     
     <!-- Meta Tags para Compartilhamento (Open Graph) -->
@@ -55,10 +55,12 @@
       * {
         -webkit-tap-highlight-color: transparent;
         outline: none !important;
+        touch-action: manipulation; /* Melhora a resposta ao toque */
       }
       body {
         background-color: #ffffff;
         color: #18181b; 
+        overscroll-behavior: none; /* Evita o efeito elástico no iOS globalmente */
       }
       .no-scrollbar::-webkit-scrollbar {
           display: none;

@@ -10,14 +10,14 @@ interface ActionFormProps {
 
 export const ActionForm: React.FC<ActionFormProps> = ({ onClose, onSubmit, user }) => {
     const [selectedType, setSelectedType] = useState<ActionType | null>(null);
+    const [friendName, setFriendName] = useState('');
     const [status, setStatus] = useState<'idle' | 'submitting' | 'success'>('idle');
 
     const handlePublish = async () => {
-        if (!selectedType || status !== 'idle') return;
+        if (!selectedType || !friendName.trim() || status !== 'idle') return;
         setStatus('submitting');
         try {
-            // Enviando string vazia para friendName já que o campo foi removido
-            await onSubmit(selectedType, '');
+            await onSubmit(selectedType, friendName);
             setStatus('success');
             setTimeout(() => {
                 onClose();
@@ -44,7 +44,7 @@ export const ActionForm: React.FC<ActionFormProps> = ({ onClose, onSubmit, user 
 
     return (
         <div className="fixed inset-0 z-50 flex flex-col bg-white/95 backdrop-blur-xl animate-in slide-in-from-bottom duration-300">
-            <header className="p-4 flex items-center justify-between">
+            <header className="p-4 flex items-center justify-between flex-none">
                 <button onClick={onClose} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center transition-transform active:scale-90">
                     <span className="material-symbols-outlined">arrow_back</span>
                 </button>
@@ -52,12 +52,15 @@ export const ActionForm: React.FC<ActionFormProps> = ({ onClose, onSubmit, user 
                 <div className="w-10"></div>
             </header>
 
-            <div className="flex-1 px-6 py-4 overflow-y-auto no-scrollbar">
-                <h1 className="text-4xl font-black italic text-gray-900 leading-tight mb-10 uppercase tracking-tighter">
+            {/* Adicionado pb-48 para garantir muito espaço de rolagem acima do botão fixo */}
+            <div className="flex-1 px-6 py-2 overflow-y-auto no-scrollbar pb-48">
+                <h1 className="text-3xl font-black italic text-gray-900 leading-tight mb-1 uppercase tracking-tighter">
                     O que você fez<br/> hoje, {user.firstName}?
                 </h1>
+                <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-6">Selecione o tipo de ação</p>
                 
-                <div className="space-y-5">
+                {/* Reduzi o espaçamento vertical entre botões para economizar espaço */}
+                <div className="space-y-3 mb-6">
                     <ActionBtn 
                         active={selectedType === ActionType.OREI} 
                         onClick={() => setSelectedType(ActionType.OREI)} 
@@ -95,13 +98,35 @@ export const ActionForm: React.FC<ActionFormProps> = ({ onClose, onSubmit, user 
                         disabled={status === 'submitting'} 
                     />
                 </div>
+
+                {/* Input agora tem um container dedicado e margem superior ajustada */}
+                {selectedType && (
+                    <div className="animate-in slide-in-from-bottom-4 duration-300 bg-gray-50 p-4 rounded-3xl border border-gray-100 mb-4">
+                        <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-2 block tracking-widest">
+                            QUEM RECEBEU ESSA AÇÃO?
+                        </label>
+                        <div className="relative">
+                            <input 
+                                type="text"
+                                autoFocus
+                                value={friendName}
+                                onChange={(e) => setFriendName(e.target.value)}
+                                placeholder="Nome da pessoa..."
+                                className="w-full h-14 bg-white border-2 border-gray-200 focus:border-black rounded-xl px-4 text-lg font-bold outline-none transition-all shadow-sm"
+                            />
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                <span className="material-symbols-outlined text-gray-300">edit</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
-            <div className="p-6">
+            <div className="p-6 bg-white border-t border-gray-100 absolute bottom-0 w-full">
                 <button 
-                    disabled={!selectedType || status === 'submitting'} 
+                    disabled={!selectedType || !friendName.trim() || status === 'submitting'} 
                     onClick={handlePublish} 
-                    className={`w-full h-16 bg-primary text-black font-black italic text-xl uppercase tracking-tighter rounded-2xl shadow-xl flex items-center justify-center gap-2 transition-all active:scale-95 ${status === 'submitting' ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02]'}`}
+                    className={`w-full h-16 bg-primary text-black font-black italic text-xl uppercase tracking-tighter rounded-2xl shadow-xl flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${status === 'submitting' ? '' : 'hover:scale-[1.02]'}`}
                 >
                     {status === 'submitting' ? (
                         <>
@@ -124,11 +149,12 @@ const ActionBtn = ({active, onClick, icon, title, color, bg, disabled}: any) => 
     <button 
         disabled={disabled}
         onClick={onClick} 
-        className={`w-full p-5 rounded-3xl border-2 transition-all flex items-center gap-4 ${active ? 'bg-white border-black shadow-xl scale-[1.02]' : 'bg-gray-50 border-transparent opacity-60'}`}
+        className={`w-full p-3.5 rounded-2xl border-2 transition-all flex items-center gap-4 ${active ? 'bg-white border-black shadow-xl scale-[1.02] z-10' : 'bg-gray-50 border-transparent opacity-60 hover:opacity-100'}`}
     >
-        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${bg} ${color}`}>
-            <span className="material-symbols-outlined text-2xl font-bold">{icon}</span>
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${bg} ${color}`}>
+            <span className="material-symbols-outlined text-xl font-bold">{icon}</span>
         </div>
-        <span className="text-xl font-black italic text-gray-900">{title}</span>
+        <span className="text-base font-black italic text-gray-900 uppercase tracking-tight">{title}</span>
+        {active && <span className="ml-auto material-symbols-outlined text-black">check_circle</span>}
     </button>
 );

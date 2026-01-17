@@ -22,6 +22,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, actions, onUpdateUser, o
     const [selectedBadge, setSelectedBadge] = useState<{label: string, desc: string, icon: string, color: string} | null>(null);
 
     const [editFirstName, setEditFirstName] = useState(user.firstName);
+    const [editLastName, setEditLastName] = useState(user.lastName);
     const [editColor, setEditColor] = useState(user.avatarColor);
     
     const myActions = actions.filter(a => a.userId === user.uid);
@@ -33,6 +34,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, actions, onUpdateUser, o
         onUpdateUser({
             ...user,
             firstName: editFirstName,
+            lastName: editLastName,
             avatarColor: editColor,
         });
         setIsEditing(false);
@@ -60,13 +62,22 @@ export const Profile: React.FC<ProfileProps> = ({ user, actions, onUpdateUser, o
                 <div className="text-center mt-6 w-full max-w-[280px]">
                     {isEditing ? (
                         <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-top-2">
-                            <input 
-                                type="text" 
-                                value={editFirstName} 
-                                onChange={(e) => setEditFirstName(e.target.value)}
-                                className="text-center w-full bg-white border-2 border-gray-100 rounded-2xl px-4 py-3 text-xl font-black italic uppercase tracking-tighter outline-none focus:border-black transition-all"
-                                placeholder="Seu Nome"
-                            />
+                            <div className="flex gap-2">
+                                <input 
+                                    type="text" 
+                                    value={editFirstName} 
+                                    onChange={(e) => setEditFirstName(e.target.value)}
+                                    className="text-center w-full bg-white border-2 border-gray-100 rounded-2xl px-2 py-3 text-lg font-black italic uppercase tracking-tighter outline-none focus:border-black transition-all"
+                                    placeholder="Nome"
+                                />
+                                <input 
+                                    type="text" 
+                                    value={editLastName} 
+                                    onChange={(e) => setEditLastName(e.target.value)}
+                                    className="text-center w-full bg-white border-2 border-gray-100 rounded-2xl px-2 py-3 text-lg font-black italic uppercase tracking-tighter outline-none focus:border-black transition-all"
+                                    placeholder="Sobrenome"
+                                />
+                            </div>
                             <div className="bg-white/80 backdrop-blur p-4 rounded-[2rem] border border-gray-100 shadow-xl">
                                 <p className="text-[9px] font-black uppercase text-gray-400 mb-3 tracking-widest text-center">Cor do Perfil</p>
                                 <div className="grid grid-cols-4 gap-2.5">
@@ -82,7 +93,9 @@ export const Profile: React.FC<ProfileProps> = ({ user, actions, onUpdateUser, o
                         </div>
                     ) : (
                         <>
-                            <h2 className="text-4xl font-black italic text-gray-900 leading-none tracking-tighter uppercase">{user.firstName}</h2>
+                            <h2 className="text-4xl font-black italic text-gray-900 leading-none tracking-tighter uppercase">
+                                {user.firstName} {user.lastName}
+                            </h2>
                             <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mt-2">Geração Vibe Teen</p>
                         </>
                     )}

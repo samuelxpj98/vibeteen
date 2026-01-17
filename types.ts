@@ -18,6 +18,7 @@ export interface User {
     avatarColor: string;
     photoUrl?: string; 
     church?: 'Vibe Teen' | 'Outra Igreja';
+    birthDate?: string; // Novo campo
     role: UserRole;
     createdAt: string;
     // Gamificação
